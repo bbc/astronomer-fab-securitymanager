@@ -233,7 +233,7 @@ class AirflowAstroSecurityManager(AstroSecurityManagerMixin, AirflowSecurityMana
             'appbuilder': appbuilder,
             'allowed_audience': conf.get('auth', 'jwt_audience'),
             'jwt_cookie_name': conf.get('auth', 'jwt_cookie_name'),
-            'jwt_aws_secret_path ': conf.get('auth', 'jwt_aws_secret_path'),
+            'jwt_aws_secret_path': conf.get('auth', 'jwt_aws_secret_path'),
             'jwt_secret_override': conf.get('auth', 'jwt_secret_override'),
             'roles_to_manage': EXISTING_ROLES,
         }
