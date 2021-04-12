@@ -286,7 +286,7 @@ class AirflowAstroSecurityManager(AstroSecurityManagerMixin, AirflowSecurityMana
     def create_user_role(self, username, base_role_name):
         """ Create a role with blank permissions"""
         base_role = self.find_role(base_role_name)
-        super().init_role(username, list(set(base_role.permissions)))
+        super().init_role(username, base_role.permissions)
 
     def sync_roles(self):
         super().sync_roles()
