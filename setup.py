@@ -83,7 +83,7 @@ setup(
         # 'apache-airflow>=1.10.0', # should be present
         # FAB is pulled in from Airflow
         'jwcrypto~=0.6.0',
-        'boto3'
+        # 'boto3' # should be present, specifying here causes version conflicts
     ],
     setup_requires=[
         'pytest-runner~=4.0',
