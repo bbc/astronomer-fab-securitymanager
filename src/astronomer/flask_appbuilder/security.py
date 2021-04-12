@@ -153,7 +153,7 @@ class AstroSecurityManagerMixin(object):
                     first_name=claims['sub'].split('.')[0],
                     last_name='',
                     email=claims['sub'],
-                    roles=[self.find_role('User')],
+                    roles=[self.find_role('Public')],
                     active=True
                 )
                 self.get_session.add(user)
