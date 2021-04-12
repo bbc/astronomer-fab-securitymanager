@@ -151,13 +151,12 @@ class AstroSecurityManagerMixin(object):
 
             email = claims['sub']
             if email in self.admin_users:
-                base_role_name = 'Admin'
+                role_name = 'Admin'
             else:
-                base_role_name = self.default_role
-
-            # For DAG level access, need a role per user
-            if self.find_role(email) is None:
-                self.create_user_role(email)
+                role_name = email
+                # For DAG level access, need a role per user
+                if self.find_role(role_name) is None:
+                    self.create_user_role(role_name, self.default_role)
 
             if user is None:
                 log.info('Creating airflow user details for %s from JWT', claims['sub'])
@@ -167,13 +166,13 @@ class AstroSecurityManagerMixin(object):
                     first_name=email.split('.')[0],
                     last_name='',
                     email=email,
-                    roles=[self.find_role(base_role_name), self.find_role(email)],
+                    roles=[self.find_role(role_name)],
                     active=True
                 )
             else:
                 log.info('Found existing airflow user', claims['sub'])
                 user.username = claims['sub']
-                user.roles = [self.find_role(base_role_name)]
+                user.roles = [self.find_role(role_name)]
                 user.active = True
 
             self.get_session.add(user)
@@ -284,9 +283,10 @@ class AirflowAstroSecurityManager(AstroSecurityManagerMixin, AirflowSecurityMana
             pass
         return super().before_request()
 
-    def create_user_role(self, username):
+    def create_user_role(self, username, base_role_name):
         """ Create a role with blank permissions"""
-        super().init_role(username, [])
+        base_role = self.find_role(base_role_name)
+        super().init_role(username, list(set(base_role.permissions)))
 
     def sync_roles(self):
         super().sync_roles()
