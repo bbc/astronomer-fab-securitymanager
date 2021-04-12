@@ -84,7 +84,7 @@ class AstroSecurityManagerMixin(object):
     :type roles_to_manage: list[str] or None
     """
 
-    def __init__(self, appbuilder, jwt_aws_secret_path, jwt_cookie_name, allowed_audience, roles_to_manage=None, validity_leeway=60, jwt_secret_override=None):
+    def __init__(self, appbuilder, jwt_aws_secret_path, jwt_cookie_name, allowed_audience, roles_to_manage=None, validity_leeway=60, jwt_secret_override=None, admin_users=None):
         super().__init__(appbuilder)
         if self.auth_type == AUTH_REMOTE_USER:
             self.authremoteuserview = AuthAstroJWTView
@@ -94,6 +94,7 @@ class AstroSecurityManagerMixin(object):
         self.roles_to_manage = roles_to_manage
         self.validity_leeway = validity_leeway
         self.jwt_secret_override = jwt_secret_override
+        self.admin_users = admin_users
 
     def check_jwt_and_get_claims(self):
         """Check the jwt cookie exists and is valid
@@ -146,22 +147,31 @@ class AstroSecurityManagerMixin(object):
             claims = self.check_jwt_and_get_claims()
             user = self.find_user(username=claims['sub'])
 
+            email = claims['sub']
+            if email in self.admin_users:
+                role_name = 'Admin'
+            else:
+                role_name = 'Public'
+
             if user is None:
                 log.info('Creating airflow user details for %s from JWT', claims['sub'])
+
                 user = self.user_model(
-                    username=claims['sub'],
-                    first_name=claims['sub'].split('.')[0],
+                    username=email,
+                    first_name=email.split('.')[0],
                     last_name='',
-                    email=claims['sub'],
-                    roles=[self.find_role('Public')],
+                    email=email,
+                    roles=[self.find_role(role_name)],
                     active=True
                 )
-                self.get_session.add(user)
-                self.get_session.commit()
             else:
                 log.info('Found existing airflow user', claims['sub'])
                 user.username = claims['sub']
+                user.roles = [self.find_role(role_name)]
                 user.active = True
+
+            self.get_session.add(user)
+            self.get_session.commit()
 
             log.info(f"Logging in user: {user.username}")
             if not login_user(user):
@@ -220,6 +230,8 @@ class AirflowAstroSecurityManager(AstroSecurityManagerMixin, AirflowSecurityMana
         of this Airflow deployment
     ``auth.jwt_cookie_name``
         Name of the cookie to extract jwt from
+    ``auth.admin_users``
+        Comma separated list of users to make admin if/when we see them
     **Optioinal config settings:**
     ``astronomer.jwt_validity_leeway``
         Override the default leeway on validating token expiry time
@@ -235,6 +247,7 @@ class AirflowAstroSecurityManager(AstroSecurityManagerMixin, AirflowSecurityMana
             'jwt_cookie_name': conf.get('auth', 'jwt_cookie_name'),
             'jwt_aws_secret_path': conf.get('auth', 'jwt_aws_secret_path'),
             'jwt_secret_override': conf.get('auth', 'jwt_secret_override'),
+            'admin_users': conf.get('auth', 'admin_users'),
             'roles_to_manage': EXISTING_ROLES,
         }
 
