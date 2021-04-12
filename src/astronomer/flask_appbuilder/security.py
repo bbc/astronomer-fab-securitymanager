@@ -84,7 +84,7 @@ class AstroSecurityManagerMixin(object):
     :type roles_to_manage: list[str] or None
     """
 
-    def __init__(self, appbuilder, jwt_aws_secret_path, jwt_cookie_name, allowed_audience, roles_to_manage=None, validity_leeway=60, jwt_secret_override=None, admin_users=None):
+    def __init__(self, appbuilder, jwt_aws_secret_path, jwt_cookie_name, allowed_audience, default_role, roles_to_manage=None, validity_leeway=60, jwt_secret_override=None, admin_users=None):
         super().__init__(appbuilder)
         if self.auth_type == AUTH_REMOTE_USER:
             self.authremoteuserview = AuthAstroJWTView
@@ -95,6 +95,7 @@ class AstroSecurityManagerMixin(object):
         self.validity_leeway = validity_leeway
         self.jwt_secret_override = jwt_secret_override
         self.admin_users = admin_users
+        self.default_role = default_role
 
     def check_jwt_and_get_claims(self):
         """Check the jwt cookie exists and is valid
@@ -151,7 +152,7 @@ class AstroSecurityManagerMixin(object):
             if email in self.admin_users:
                 role_name = 'Admin'
             else:
-                role_name = 'Public'
+                role_name = self.default_role
 
             if user is None:
                 log.info('Creating airflow user details for %s from JWT', claims['sub'])
@@ -232,6 +233,8 @@ class AirflowAstroSecurityManager(AstroSecurityManagerMixin, AirflowSecurityMana
         Name of the cookie to extract jwt from
     ``auth.admin_users``
         Comma separated list of users to make admin if/when we see them
+    ``auth.default_role``
+        The name of the airflow role users will be assigned to
     **Optioinal config settings:**
     ``astronomer.jwt_validity_leeway``
         Override the default leeway on validating token expiry time
@@ -253,6 +256,7 @@ class AirflowAstroSecurityManager(AstroSecurityManagerMixin, AirflowSecurityMana
             'jwt_cookie_name': conf.get('auth', 'jwt_cookie_name'),
             'jwt_aws_secret_path': conf.get('auth', 'jwt_aws_secret_path'),
             'jwt_secret_override': conf.get('auth', 'jwt_secret_override'),
+            'default_role': conf.get('auth', 'default_role'),
             'admin_users': admin_users,
             'roles_to_manage': EXISTING_ROLES,
         }
