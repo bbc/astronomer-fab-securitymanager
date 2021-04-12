@@ -241,13 +241,19 @@ class AirflowAstroSecurityManager(AstroSecurityManagerMixin, AirflowSecurityMana
         from airflow.configuration import conf
         from airflow.configuration import AirflowConfigException
 
+        admin_users = []
+        admin_users_str = conf.get('auth', 'admin_users')
+        if admin_users_str:
+            admin_users = admin_users_str.split(',')
+            admin_users = [u.strip() for u in admin_users]
+
         kwargs = {
             'appbuilder': appbuilder,
             'allowed_audience': conf.get('auth', 'jwt_audience'),
             'jwt_cookie_name': conf.get('auth', 'jwt_cookie_name'),
             'jwt_aws_secret_path': conf.get('auth', 'jwt_aws_secret_path'),
             'jwt_secret_override': conf.get('auth', 'jwt_secret_override'),
-            'admin_users': conf.get('auth', 'admin_users'),
+            'admin_users': admin_users,
             'roles_to_manage': EXISTING_ROLES,
         }
 
