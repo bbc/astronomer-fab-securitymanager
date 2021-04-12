@@ -14,6 +14,7 @@
 import json
 from logging import getLogger
 
+from airflow.security import permissions
 from flask import abort, request
 from flask_appbuilder.security.manager import AUTH_REMOTE_USER
 from flask_appbuilder.security.views import AuthView, expose
@@ -150,9 +151,13 @@ class AstroSecurityManagerMixin(object):
 
             email = claims['sub']
             if email in self.admin_users:
-                role_name = 'Admin'
+                base_role_name = 'Admin'
             else:
-                role_name = self.default_role
+                base_role_name = self.default_role
+
+            # For DAG level access, need a role per user
+            if self.find_role(email) is None:
+                self.create_user_role(email)
 
             if user is None:
                 log.info('Creating airflow user details for %s from JWT', claims['sub'])
@@ -162,13 +167,13 @@ class AstroSecurityManagerMixin(object):
                     first_name=email.split('.')[0],
                     last_name='',
                     email=email,
-                    roles=[self.find_role(role_name)],
+                    roles=[self.find_role(base_role_name), self.find_role(email)],
                     active=True
                 )
             else:
                 log.info('Found existing airflow user', claims['sub'])
                 user.username = claims['sub']
-                user.roles = [self.find_role(role_name)]
+                user.roles = [self.find_role(base_role_name)]
                 user.active = True
 
             self.get_session.add(user)
@@ -278,6 +283,10 @@ class AirflowAstroSecurityManager(AstroSecurityManagerMixin, AirflowSecurityMana
             # self.reload_jwt_signing_cert()
             pass
         return super().before_request()
+
+    def create_user_role(self, username):
+        """ Create a role with blank permissions"""
+        super().init_role(username, [])
 
     def sync_roles(self):
         super().sync_roles()
