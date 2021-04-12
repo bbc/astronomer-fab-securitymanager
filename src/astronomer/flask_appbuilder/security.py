@@ -84,11 +84,11 @@ class AstroSecurityManagerMixin(object):
     :type roles_to_manage: list[str] or None
     """
 
-    def __init__(self, appbuilder, jwt_secret_aws_path, jwt_cookie_name, allowed_audience, roles_to_manage=None, validity_leeway=60, jwt_secret_override=None):
+    def __init__(self, appbuilder, jwt_aws_secret_path, jwt_cookie_name, allowed_audience, roles_to_manage=None, validity_leeway=60, jwt_secret_override=None):
         super().__init__(appbuilder)
         if self.auth_type == AUTH_REMOTE_USER:
             self.authremoteuserview = AuthAstroJWTView
-        self.jwt_secret_aws_path = jwt_secret_aws_path
+        self.jwt_aws_secret_path = jwt_aws_secret_path
         self.jwt_cookie_name = jwt_cookie_name
         self.allowed_audience = allowed_audience
         self.roles_to_manage = roles_to_manage
@@ -119,7 +119,7 @@ class AstroSecurityManagerMixin(object):
 
             token.leeway = self.validity_leeway
 
-            key = {'k': common.base64url_encode(get_jwt_secret(self.jwt_secret_aws_path, self.jwt_secret_override)), "kty": "oct", "alg": "HS256"}
+            key = {'k': common.base64url_encode(get_jwt_secret(self.jwt_aws_secret_path, self.jwt_secret_override)), "kty": "oct", "alg": "HS256"}
             key = jwk.JWK(**key)
             token.deserialize(jwt=auth_cookie, key=key)
             claims = json.loads(token.claims)
@@ -142,7 +142,7 @@ class AstroSecurityManagerMixin(object):
             return super().before_request()
 
         if current_user.is_anonymous:
-            update_jwt_secret(self.jwt_secret_aws_path)
+            update_jwt_secret(self.jwt_aws_secret_path)
             claims = self.check_jwt_and_get_claims()
             user = self.find_user(username=claims['sub'])
 
