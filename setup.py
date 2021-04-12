@@ -80,7 +80,7 @@ setup(
     zip_safe=True,
     platforms='any',
     install_requires=[
-        'apache-airflow>=1.10.0',
+        # 'apache-airflow>=1.10.0',
         # FAB is pulled in from Airflow
         'jwcrypto~=0.6.0',
         'boto3>=1.16.23'
