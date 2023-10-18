@@ -301,7 +301,7 @@ class AirflowAstroSecurityManager(AstroSecurityManagerMixin, AirflowSecurityMana
         if base_role:
             log.info(f"base_role.permissions: {base_role.permissions}")
             perms = set(
-                {(perm_view.permission.name, perm_view.view_menu.name) for perm_view in base_role.permissions}
+                {(perm_view.action.name, perm_view.resource.name) for perm_view in base_role.permissions}
             )
         else:
             log.warning(f"Base role doesn't exist: {base_role_name}")
